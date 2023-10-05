@@ -405,7 +405,7 @@ class Editor:
     def save(self):
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)["text"]
-
+        
         if len(selected_tab) >= 8:
             if selected_tab[:8] == "untitled":
                 self.saveAs()
@@ -413,7 +413,7 @@ class Editor:
                 with open(selected_tab, "wb+") as f:
                     f.write(
                         self.Editors[selected_tab]
-                        .children["!frame"]
+                        .children["!frame2"]
                         .children["!scrolledtext"]
                         .get(1.0, ttk.END)
                         .encode("utf-8")
@@ -494,7 +494,7 @@ class Editor:
         testProcess = CMDProcess(
             cmd,
             lambda info: self.Editors[selected_tab]
-            .children["!frame2"]
+            .children["!frame3"]
             .children["!scrolledtext"]
             .insert(ttk.END, info),
         )
@@ -505,7 +505,7 @@ class Editor:
         selected_tab = self.codeEditor.tab(index)["text"]
 
         self.Editors[selected_tab].children[
-            "!frame2"
+            "!frame3"
         ].children["!scrolledtext"].delete(1.0, ttk.END)
 
 
