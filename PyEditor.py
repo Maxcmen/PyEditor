@@ -1,15 +1,242 @@
 import os
 import sys
+import subprocess
+import threading
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 from tkinter import PhotoImage, filedialog
 from ttkbootstrap.dialogs import Messagebox
+from ttkbootstrap.dialogs import Querybox
 import idlelib.colorizer as idc
 import idlelib.percolator as idp
 
-from RunCmd import CMDProcess
-from TreeWindow import TreeWindow
+
+class CMDProcess(threading.Thread):
+    def __init__(self, args, callback):
+        threading.Thread.__init__(self)
+        self.args = args
+        self.callback = callback
+        self.cwd = "./"
+
+    def run(self):
+        self.proc = subprocess.Popen(
+            self.args,
+            bufsize=1,
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=self.cwd,
+        )
+
+        while self.proc.poll() is None:
+            line = self.proc.stdout.readline()
+            self.proc.stdout.flush()
+            if self.callback:
+                self.callback(line)
+
+
+class TreeWindow(ttk.Frame):
+    def __init__(self, master, path):
+        self.rootPath = path
+
+        self.frame = ttk.Frame(master)
+
+        self.frame.pack(side="left", fill="y")
+
+        self.label = ttk.Label(self.frame, text="文件资源管理器")
+
+        self.label.pack(anchor="nw")
+        self.label.config(font=("黑体", 8))
+
+        self.tree = ttk.Treeview(self.frame)
+
+        self.tree.pack(side="left", fill="y")
+
+        self.filepaths = {self.getlastPath(path): path}
+
+        root = self.tree.insert(
+            "",
+            "end",
+            text=self.getlastPath(path),
+            open=True,
+        )
+
+        self.loadTree(root, path)
+
+        self.dirpopOutMenu = ttk.Menu(self.frame)
+
+        self.dirpopOutMenu.add_command(
+            label="新建文件", command=self.createFile
+        )
+        self.dirpopOutMenu.add_command(
+            label="新建文件夹", command=self.createDir
+        )
+
+        self.dirpopOutMenu.add_separator()
+
+        self.dirpopOutMenu.add_command(
+            label="重命名", command=self.reName
+        )
+
+        self.dirpopOutMenu.add_separator()
+
+        self.dirpopOutMenu.add_command(
+            label="删除", command=self.delFile
+        )
+
+        self.filepopOutMenu = ttk.Menu(self.frame)
+
+        self.filepopOutMenu.add_command(
+            label="重命名", command=self.reName
+        )
+        self.filepopOutMenu.add_command(
+            label="删除", command=self.delFile
+        )
+
+        # self.filepopOutMenu.add_separator()
+
+        # self.filepopOutMenu.add_command(label="复制绝对路径")
+        # self.filepopOutMenu.add_command(label="复制相对路径")
+
+        self.tree.bind("<Button-3>", self.popOut)
+
+    def popOut(self, event):
+        selected_item = (
+            self.tree.selection()[0]
+            if len(self.tree.selection())
+            else ""
+        )
+        values = self.tree.item(selected_item)
+
+        if values["text"] == "":
+            return
+
+        if os.path.isdir(self.filepaths[values["text"]]):
+            # Dir popOutMenu if now is dir
+            self.dirpopOutMenu.post(
+                event.x_root, event.y_root
+            )
+
+        else:
+            # File PopOutMenu else
+            self.filepopOutMenu.post(
+                event.x_root, event.y_root
+            )
+
+        self.frame.update()
+
+    def delFile(self):
+        if Messagebox.yesno(message="确定删除吗?"):
+            selected_item = self.tree.selection()[0]
+            values = self.tree.item(selected_item)
+
+            path = self.filepaths[values["text"]]
+
+            os.remove(path)
+
+            self.OpenDir(self.rootPath)
+
+    def reName(self):
+        selected_item = self.tree.selection()[0]
+        values = self.tree.item(selected_item)
+
+        if values["text"] == "":
+            return
+
+        path = self.filepaths[values["text"]]
+
+        newName = Querybox.get_string(
+            title="PyEditor",
+            prompt="请输入文件的新名称",
+            initialvalue="NewName",
+        )
+
+        if newName == "" or os.path.split(path)[0]:
+            return
+
+        newPath = os.path.join(
+            os.path.split(path)[0], newName
+        )
+
+        os.rename(path, newPath)
+
+        self.OpenDir(self.rootPath)
+
+    def createDir(self):
+        selected_item = self.tree.selection()[0]
+        values = self.tree.item(selected_item)
+
+        path = self.filepaths[values["text"]]
+
+        dirName = Querybox.get_string(
+            title="PyEditor",
+            prompt="请输入文件夹名称:",
+            initialvalue="NewDir",
+        )
+
+        if dirName != "":
+            dirPath = os.path.join(path, dirName)
+
+            if not os.path.exists(dirPath):
+                os.mkdir(dirPath)
+
+                self.OpenDir(self.rootPath)
+
+    def createFile(self):
+        selected_item = self.tree.selection()[0]
+        values = self.tree.item(selected_item)
+
+        path = self.filepaths[values["text"]]
+
+        dirName = Querybox.get_string(
+            title="PyEditor",
+            prompt="请输入文件名称:",
+            initialvalue="NewFile",
+        )
+
+        if dirName != "":
+            filePath = os.path.join(path, dirName)
+
+            if not os.path.exists(filePath):
+                with open(filePath, "a+") as f:
+                    pass
+
+                self.OpenDir(self.rootPath)
+
+    def OpenDir(self, path):
+        self.rootPath = path
+
+        self.tree.delete(*self.tree.get_children())
+
+        root = self.tree.insert(
+            "",
+            "end",
+            text=self.getlastPath(path),
+            open=True,
+        )
+
+        self.loadTree(root, path)
+
+    def loadTree(self, parent, path):
+        for filepath in os.listdir(path):
+            abs = os.path.join(path, filepath)
+
+            treey = self.tree.insert(
+                parent,
+                "end",
+                text=self.getlastPath(filepath),
+            )
+
+            self.filepaths[self.getlastPath(filepath)] = abs
+
+            if os.path.isdir(abs):
+                self.loadTree(treey, abs)
+
+    def getlastPath(self, path):
+        pathList = os.path.split(path)
+        return pathList[-1]
 
 
 class Editor:
@@ -31,7 +258,7 @@ class Editor:
         self.maxsize = (1920, 1080)
 
         self.resizable = None
-        self.alpha = 1.0
+        self.alpha = 0.95
 
         # root
         self.root = ttk.Window(
@@ -214,33 +441,20 @@ class Editor:
 
         self.root.bind("<Button-3>", self.popout)
 
-        self.fileTreepopOutMenu = ttk.Menu(self.root)
-
-        self.fileTreepopOutMenu.add_cascade(label="新建文件")
-        self.fileTreepopOutMenu.add_cascade(label="新建文件夹")
-
-        self.fileTreepopOutMenu.add_separator()
-
-        self.fileTreepopOutMenu.add_cascade(label="重命名")
-        self.fileTreepopOutMenu.add_cascade(label="删除")
-
-        self.fileTree.tree.bind(
-            "<Button-3>", self.fileTreepopOut
-        )
-
         self.root.config(menu=self.menu)
 
         self.root.mainloop()
 
-    def fileTreepopOut(self, event):
-        self.fileTreepopOutMenu.post(
-            event.x_root, event.y_root
-        )
-        self.root.update()
-
     def fileTreeClick(self, event):
-        selected_item = self.fileTree.tree.selection()[0]
+        selected_item = (
+            self.fileTree.tree.selection()[0]
+            if len(self.fileTree.tree.selection())
+            else ""
+        )
         values = self.fileTree.tree.item(selected_item)
+
+        if values == "":
+            return
 
         if not os.path.isdir(
             self.fileTree.filepaths[values["text"]]
@@ -288,7 +502,7 @@ class Editor:
 
         Text.see(ttk.END)
 
-        Text.pack(side="top", fill="x")
+        Text.pack(side="top", fill="both")
 
         Text.config(font=("黑体", 14))
 
@@ -301,11 +515,11 @@ class Editor:
             d = idc.ColorDelegator()
             p.insertfilter(d)
 
-        runWindow = ttk.ScrolledText(CodeEditor)
+            runWindow = ttk.ScrolledText(CodeEditor)
 
-        runWindow.pack(side="bottom", fill="x")
+            runWindow.pack(side="bottom", fill="x")
 
-        runWindow.config(font=("黑体", 14))
+            runWindow.config(font=("黑体", 14))
 
         return CodeEditor
 
@@ -336,7 +550,7 @@ class Editor:
     def about(self):
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.04 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.05 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
@@ -375,7 +589,14 @@ class Editor:
         )
 
         with open(filepath, "rb+") as f:
-            text = f.read().decode("utf-8")
+            text = f.read()
+
+            try:
+                text = text.decode("utf-8")
+            except:
+                Messagebox.okcancel(
+                    title="PyEditor", message="解码失败!"
+                )
 
         self.Editors[filepath] = self.createEditor(
             self.root, text=text, type=type
@@ -405,7 +626,7 @@ class Editor:
     def save(self):
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)["text"]
-        
+
         if len(selected_tab) >= 8:
             if selected_tab[:8] == "untitled":
                 self.saveAs()
@@ -509,4 +730,5 @@ class Editor:
         ].children["!scrolledtext"].delete(1.0, ttk.END)
 
 
-Editor()
+if __name__ == "__main__":
+    Editor()
