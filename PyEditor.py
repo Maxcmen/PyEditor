@@ -45,7 +45,9 @@ class TreeWindow(ttk.Frame):
 
         self.frame.pack(side="left", fill="y")
 
-        self.label = ttk.Label(self.frame, text="文件资源管理器")
+        self.label = ttk.Label(
+            self.frame, text="文件资源管理器"
+        )
 
         self.label.pack(anchor="nw")
         self.label.config(font=("黑体", 8))
@@ -113,7 +115,9 @@ class TreeWindow(ttk.Frame):
         if values["text"] == "":
             return
 
-        if os.path.isdir(self.filepaths[values["text"]]):
+        if os.path.isdir(
+            self.filepaths[values["text"]]
+        ):
             # Dir popOutMenu if now is dir
             self.dirpopOutMenu.post(
                 event.x_root, event.y_root
@@ -229,7 +233,9 @@ class TreeWindow(ttk.Frame):
                 text=self.getlastPath(filepath),
             )
 
-            self.filepaths[self.getlastPath(filepath)] = abs
+            self.filepaths[
+                self.getlastPath(filepath)
+            ] = abs
 
             if os.path.isdir(abs):
                 self.loadTree(treey, abs)
@@ -347,7 +353,9 @@ class Editor:
         # run menu
         self.runMenu = ttk.Menu(self.menu)
 
-        self.menu.add_cascade(label="运行", menu=self.runMenu)
+        self.menu.add_cascade(
+            label="运行", menu=self.runMenu
+        )
 
         self.runMenu.add_command(
             label="运行", command=self.runFile
@@ -441,6 +449,8 @@ class Editor:
 
         self.root.bind("<Button-3>", self.popout)
 
+        self.filepaths = {}
+
         self.root.config(menu=self.menu)
 
         self.root.mainloop()
@@ -465,10 +475,14 @@ class Editor:
                 ]
             )
 
-    def createEditor(self, root, text="", type="python"):
+    def createEditor(
+        self, root, text="", type="python"
+    ):
         CodeEditor = ttk.Frame(root)
 
-        buttonFrame = ttk.Frame(CodeEditor, style="dark")
+        buttonFrame = ttk.Frame(
+            CodeEditor, style="dark"
+        )
 
         buttonFrame.pack(anchor="ne", fill="x")
 
@@ -523,6 +537,24 @@ class Editor:
 
         return CodeEditor
 
+    def pictureViewer(self, root, path):
+        image = ttk.Label(
+            root, image=ttk.PhotoImage(False, file=path)
+        )
+
+        image.pack()
+
+        exitButton = ttk.Button(
+            root,
+            text="✖",
+            bootstyle="danger",
+            command=self.exitFile,
+        )
+
+        exitButton.pack(anchor="ne")
+
+        return image
+
     def saveAll(self):
         for filepath in self.Editors.keys():
             self.save(filepath=filepath)
@@ -550,23 +582,26 @@ class Editor:
     def about(self):
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.05 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.06 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
         max = 0
 
         for name in self.Editors.keys():
-            if name[:8] == "untitled" and len(name) != 8:
+            if (
+                name[:8] == "untitled"
+                and len(name) != 8
+            ):
                 index = 8 - len(name)
                 if max < int(name[index:]):
                     max = int(name[index:])
 
         max += 1
 
-        self.Editors[f"untitled{max}"] = self.createEditor(
-            self.root
-        )
+        self.Editors[
+            f"untitled{max}"
+        ] = self.createEditor(self.root)
         self.codeEditor.add(
             self.Editors[f"untitled{max}"],
             text=f"untitled{max}",
@@ -579,12 +614,17 @@ class Editor:
 
         if filepath == "":
             filepath = filedialog.askopenfilename()
-        filename = filepath.split("/")[-1]
+
+        if filepath == "":
+            return
+
+        filename = os.path.split(filepath)[-1]
 
         text = ""
         type = (
             "python"
-            if filename.split(".")[-1] in ("py", "python")
+            if filename.split(".")[-1]
+            in ("py", "python")
             else ""
         )
 
@@ -594,22 +634,35 @@ class Editor:
             try:
                 text = text.decode("utf-8")
             except:
-                Messagebox.okcancel(
-                    title="PyEditor", message="解码失败!"
-                )
+                if not filename.split(".")[-1] in (
+                    "png",
+                    "jpg",
+                ):
+                    Messagebox.okcancel(
+                        title="PyEditor",
+                        message="解码失败!",
+                    )
 
-        self.Editors[filepath] = self.createEditor(
-            self.root, text=text, type=type
-        )
-        self.Editors[filepath]
+        if filename.split(".")[-1] in ("png", "jpg"):
+            self.Editors[filepath] = self.pictureViewer(
+                root=self.root, path=filepath
+            )
+        else:
+            self.Editors[filepath] = self.createEditor(
+                self.root, text=text, type=type
+            )
 
         self.codeEditor.add(
-            self.Editors[filepath], text=filepath
+            self.Editors[filepath], text=filename
         )
+
+        self.filepaths[filename] = filepath
 
     def backout(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         self.Editors[selected_tab].children[
             "!frame"
@@ -617,7 +670,9 @@ class Editor:
 
     def regain(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         self.Editors[selected_tab].children[
             "!frame"
@@ -625,15 +680,21 @@ class Editor:
 
     def save(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         if len(selected_tab) >= 8:
             if selected_tab[:8] == "untitled":
                 self.saveAs()
             else:
-                with open(selected_tab, "wb+") as f:
+                with open(
+                    self.filepaths[selected_tab], "wb+"
+                ) as f:
                     f.write(
-                        self.Editors[selected_tab]
+                        self.Editors[
+                            self.filepaths[selected_tab]
+                        ]
                         .children["!frame2"]
                         .children["!scrolledtext"]
                         .get(1.0, ttk.END)
@@ -646,7 +707,9 @@ class Editor:
 
     def saveAs(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         filepath = filedialog.askopenfilename()
 
@@ -655,7 +718,9 @@ class Editor:
 
         with open(filepath, "wb+") as f:
             f.write(
-                self.Editors[selected_tab]
+                self.Editors[
+                    self.filepaths[selected_tab]
+                ]
                 .children["!frame"]
                 .children["!scrolledtext"]
                 .get(1.0, ttk.END)
@@ -671,7 +736,9 @@ class Editor:
 
     def copy(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         self.Editors[selected_tab].children[
             "!frame"
@@ -681,7 +748,9 @@ class Editor:
 
     def paste(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         self.Editors[selected_tab].children[
             "!frame"
@@ -691,7 +760,9 @@ class Editor:
 
     def cut(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         self.Editors[selected_tab].children[
             "!frame"
@@ -706,7 +777,9 @@ class Editor:
         self.stopRun()
 
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         self.save()
 
@@ -723,7 +796,9 @@ class Editor:
 
     def stopRun(self):
         index = self.codeEditor.index("current")
-        selected_tab = self.codeEditor.tab(index)["text"]
+        selected_tab = self.codeEditor.tab(index)[
+            "text"
+        ]
 
         self.Editors[selected_tab].children[
             "!frame3"
