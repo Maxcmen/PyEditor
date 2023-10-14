@@ -582,7 +582,7 @@ class Editor:
     def about(self):
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.06 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.07 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
@@ -648,12 +648,12 @@ class Editor:
                 root=self.root, path=filepath
             )
         else:
-            self.Editors[filepath] = self.createEditor(
+            self.Editors[filename] = self.createEditor(
                 self.root, text=text, type=type
             )
 
         self.codeEditor.add(
-            self.Editors[filepath], text=filename
+            self.Editors[filename], text=filename
         )
 
         self.filepaths[filename] = filepath
@@ -687,23 +687,23 @@ class Editor:
         if len(selected_tab) >= 8:
             if selected_tab[:8] == "untitled":
                 self.saveAs()
-            else:
-                with open(
-                    self.filepaths[selected_tab], "wb+"
-                ) as f:
-                    f.write(
-                        self.Editors[
-                            self.filepaths[selected_tab]
-                        ]
-                        .children["!frame2"]
-                        .children["!scrolledtext"]
-                        .get(1.0, ttk.END)
-                        .encode("utf-8")
-                    )
+        else:
+            with open(
+                self.filepaths[selected_tab], "wb+"
+            ) as f:
+                f.write(
+                    self.Editors[
+                        selected_tab
+                    ]
+                    .children["!frame2"]
+                    .children["!scrolledtext"]
+                    .get(1.0, ttk.END)
+                    .encode("utf-8")
+                )
 
-        Messagebox.okcancel(
-            title="PyEditor", message="保存成功"
-        )
+                Messagebox.okcancel(
+                    title="PyEditor", message="保存成功"
+                )
 
     def saveAs(self):
         index = self.codeEditor.index("current")
@@ -783,7 +783,7 @@ class Editor:
 
         self.save()
 
-        cmd = ["python", "-u", selected_tab]
+        cmd = ["python", "-u", self.filepaths[selected_tab]]
 
         testProcess = CMDProcess(
             cmd,
