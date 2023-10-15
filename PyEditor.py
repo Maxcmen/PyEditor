@@ -15,11 +15,13 @@ import idlelib.percolator as idp
 class CMDProcess(threading.Thread):
     def __init__(self, args, callback):
         threading.Thread.__init__(self)
+
         self.args = args
         self.callback = callback
         self.cwd = "./"
 
     def run(self):
+        """运行命令"""
         self.proc = subprocess.Popen(
             self.args,
             bufsize=1,
@@ -31,10 +33,14 @@ class CMDProcess(threading.Thread):
         )
 
         while self.proc.poll() is None:
-            line = self.proc.stdout.readline()
+            line = (
+                self.proc.stdout.readline()
+            )  # 获取输出缓冲区
+
             self.proc.stdout.flush()
+
             if self.callback:
-                self.callback(line)
+                self.callback(line)  # 调用打印函数
 
 
 class TreeWindow(ttk.Frame):
@@ -56,7 +62,9 @@ class TreeWindow(ttk.Frame):
 
         self.tree.pack(side="left", fill="y")
 
-        self.filepaths = {self.getlastPath(path): path}
+        self.filepaths = {
+            self.getlastPath(path): path
+        }
 
         root = self.tree.insert(
             "",
@@ -67,6 +75,7 @@ class TreeWindow(ttk.Frame):
 
         self.loadTree(root, path)
 
+        # 当前选择文件夹显示的菜单
         self.dirpopOutMenu = ttk.Menu(self.frame)
 
         self.dirpopOutMenu.add_command(
@@ -88,6 +97,7 @@ class TreeWindow(ttk.Frame):
             label="删除", command=self.delFile
         )
 
+        # 当前选择文件显示的菜单
         self.filepopOutMenu = ttk.Menu(self.frame)
 
         self.filepopOutMenu.add_command(
@@ -132,8 +142,11 @@ class TreeWindow(ttk.Frame):
         self.frame.update()
 
     def delFile(self):
+        """删除文件"""
         if Messagebox.yesno(message="确定删除吗?"):
-            selected_item = self.tree.selection()[0]
+            selected_item = self.tree.selection()[
+                0
+            ]
             values = self.tree.item(selected_item)
 
             path = self.filepaths[values["text"]]
@@ -143,10 +156,13 @@ class TreeWindow(ttk.Frame):
             self.OpenDir(self.rootPath)
 
     def reName(self):
+        """重命名文件"""
+
+        # 获取当前选择节点
         selected_item = self.tree.selection()[0]
         values = self.tree.item(selected_item)
 
-        if values["text"] == "":
+        if values["text"] == "":  # 为空返回
             return
 
         path = self.filepaths[values["text"]]
@@ -157,7 +173,10 @@ class TreeWindow(ttk.Frame):
             initialvalue="NewName",
         )
 
-        if newName == "" or os.path.split(path)[0]:
+        if (
+            newName == ""
+            or os.path.split(path)[0]
+        ):
             return
 
         newPath = os.path.join(
@@ -166,9 +185,10 @@ class TreeWindow(ttk.Frame):
 
         os.rename(path, newPath)
 
-        self.OpenDir(self.rootPath)
+        self.OpenDir(self.rootPath)  # 刷新资源管理器
 
     def createDir(self):
+        """创建文件夹"""
         selected_item = self.tree.selection()[0]
         values = self.tree.item(selected_item)
 
@@ -189,6 +209,7 @@ class TreeWindow(ttk.Frame):
                 self.OpenDir(self.rootPath)
 
     def createFile(self):
+        """新建文件"""
         selected_item = self.tree.selection()[0]
         values = self.tree.item(selected_item)
 
@@ -210,9 +231,12 @@ class TreeWindow(ttk.Frame):
                 self.OpenDir(self.rootPath)
 
     def OpenDir(self, path):
-        self.rootPath = path
+        """打开文件夹"""
+        self.rootPath = path  # 刷新根目录
 
-        self.tree.delete(*self.tree.get_children())
+        self.tree.delete(
+            *self.tree.get_children()
+        )  # 删除当前所以节点
 
         root = self.tree.insert(
             "",
@@ -224,6 +248,7 @@ class TreeWindow(ttk.Frame):
         self.loadTree(root, path)
 
     def loadTree(self, parent, path):
+        """加载节点"""
         for filepath in os.listdir(path):
             abs = os.path.join(path, filepath)
 
@@ -238,9 +263,12 @@ class TreeWindow(ttk.Frame):
             ] = abs
 
             if os.path.isdir(abs):
-                self.loadTree(treey, abs)
+                self.loadTree(
+                    treey, abs
+                )  # 递归创建文件树
 
     def getlastPath(self, path):
+        """获取路径最后的文件名或文件夹名"""
         pathList = os.path.split(path)
         return pathList[-1]
 
@@ -378,25 +406,31 @@ class Editor:
         # file Tree
         self.path = os.getcwd()
 
-        self.fileTree = TreeWindow(self.root, self.path)
+        self.fileTree = TreeWindow(
+            self.root, self.path
+        )
 
         self.fileTree.tree.bind(
-            "<<TreeviewSelect>>", self.fileTreeClick
-        )
+            "<<TreeviewSelect>>",
+            self.fileTreeClick,
+        )  # 绑定 “当节点被选择事件”
 
         # Code Text
         self.codeEditor = ttk.Notebook(self.root)
 
-        self.Editors = {}
-        self.Editors["untitled"] = self.createEditor(
-            self.root
-        )
+        self.Editors = {}  # 保存每个编辑界面，标签页名为key
+        self.Editors[
+            "untitled"
+        ] = self.createEditor(self.root)
 
         self.codeEditor.add(
-            self.Editors["untitled"], text="untitled"
+            self.Editors["untitled"],
+            text="untitled",
         )
 
-        self.codeEditor.pack(fill=ttk.BOTH, expand=True)
+        self.codeEditor.pack(
+            fill=ttk.BOTH, expand=True
+        )
 
         # PopoutMenu
         self.popOutMenu = ttk.Menu(self.root)
@@ -456,18 +490,23 @@ class Editor:
         self.root.mainloop()
 
     def fileTreeClick(self, event):
+        """当资源管理器中的文件树节点被选择且为文件时打开"""
         selected_item = (
             self.fileTree.tree.selection()[0]
             if len(self.fileTree.tree.selection())
             else ""
         )
-        values = self.fileTree.tree.item(selected_item)
+        values = self.fileTree.tree.item(
+            selected_item
+        )
 
         if values == "":
             return
 
         if not os.path.isdir(
-            self.fileTree.filepaths[values["text"]]
+            self.fileTree.filepaths[
+                values["text"]
+            ]
         ):
             self.openFile(
                 filepath=self.fileTree.filepaths[
@@ -478,6 +517,7 @@ class Editor:
     def createEditor(
         self, root, text="", type="python"
     ):
+        """创建一个文件编辑界面"""
         CodeEditor = ttk.Frame(root)
 
         buttonFrame = ttk.Frame(
@@ -508,6 +548,7 @@ class Editor:
 
         exitButton.pack(side="right")
 
+        # 类型为python时才需要
         if type == "python":
             stopButton.pack(side="right")
             runButton.pack(side="right")
@@ -522,24 +563,33 @@ class Editor:
 
         Text.insert(1.0, text)
 
+        # 类型为python时才需要
         if type == "python":
-            idc.color_config(Text)
+            idc.color_config(Text)  # 高亮显示
 
             p = idp.Percolator(Text)
             d = idc.ColorDelegator()
             p.insertfilter(d)
 
-            runWindow = ttk.ScrolledText(CodeEditor)
+            runWindow = ttk.ScrolledText(
+                CodeEditor
+            )
 
-            runWindow.pack(side="bottom", fill="x")
+            runWindow.pack(
+                side="bottom", fill="x"
+            )
 
             runWindow.config(font=("黑体", 14))
 
         return CodeEditor
 
     def pictureViewer(self, root, path):
+        """创建一个图片查看器"""
         image = ttk.Label(
-            root, image=ttk.PhotoImage(False, file=path)
+            root,
+            image=ttk.PhotoImage(
+                False, file=path
+            ),
         )
 
         image.pack()
@@ -556,21 +606,29 @@ class Editor:
         return image
 
     def saveAll(self):
+        """保存所有文件"""
         for filepath in self.Editors.keys():
             self.save(filepath=filepath)
 
     def exitFile(self):
+        """关闭标签页"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)
 
         self.codeEditor.forget(index)
 
     def popout(self, event):
-        self.popOutMenu.post(event.x_root, event.y_root)
+        """右键菜单"""
+        self.popOutMenu.post(
+            event.x_root, event.y_root
+        )
         self.root.update()
 
     def openDir(self):
-        dirPath = filedialog.askdirectory()
+        """打开文件夹"""
+        dirPath = (
+            filedialog.askdirectory()
+        )  # 查询文件夹路径
 
         if dirPath == "":
             return
@@ -580,14 +638,17 @@ class Editor:
         self.root.update()
 
     def about(self):
+        """获取帮助信息"""
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.07 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.08 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
+        """创建新文件"""
         max = 0
 
+        # 因为前面都为untitled，后面则是数字，以此分辨
         for name in self.Editors.keys():
             if (
                 name[:8] == "untitled"
@@ -602,18 +663,22 @@ class Editor:
         self.Editors[
             f"untitled{max}"
         ] = self.createEditor(self.root)
+
         self.codeEditor.add(
             self.Editors[f"untitled{max}"],
             text=f"untitled{max}",
         )
 
     def openFile(self, filepath=""):
+        """打开文件"""
         for path in self.Editors.keys():
             if path == filepath:
                 return
 
         if filepath == "":
-            filepath = filedialog.askopenfilename()
+            filepath = (
+                filedialog.askopenfilename()
+            )  # 获取文件路径
 
         if filepath == "":
             return
@@ -633,8 +698,10 @@ class Editor:
 
             try:
                 text = text.decode("utf-8")
-            except:
-                if not filename.split(".")[-1] in (
+            except UnicodeDecodeError:  # 解密失败
+                if not filename.split(".")[
+                    -1
+                ] in (
                     "png",
                     "jpg",
                 ):
@@ -643,12 +710,19 @@ class Editor:
                         message="解码失败!",
                     )
 
-        if filename.split(".")[-1] in ("png", "jpg"):
-            self.Editors[filepath] = self.pictureViewer(
+        if filename.split(".")[-1] in (
+            "png",
+            "jpg",
+        ):
+            self.Editors[
+                filepath
+            ] = self.pictureViewer(
                 root=self.root, path=filepath
             )
         else:
-            self.Editors[filename] = self.createEditor(
+            self.Editors[
+                filename
+            ] = self.createEditor(
                 self.root, text=text, type=type
             )
 
@@ -659,16 +733,22 @@ class Editor:
         self.filepaths[filename] = filepath
 
     def backout(self):
+        """撤销文本框编辑"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
         ]
 
-        self.Editors[selected_tab].children[
-            "!frame"
-        ].children["!scrolledtext"].edit_undo()
+        self.Editors[
+            selected_tab
+        ].children[  # 这个元素访问方式......
+            "!frame"  # 调试慢慢找到的......
+        ].children[
+            "!scrolledtext"
+        ].edit_undo()
 
     def regain(self):
+        """恢复编辑框编辑"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
@@ -679,6 +759,7 @@ class Editor:
         ].children["!scrolledtext"].edit_redo()
 
     def save(self):
+        """保存文件"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
@@ -686,15 +767,14 @@ class Editor:
 
         if len(selected_tab) >= 8:
             if selected_tab[:8] == "untitled":
-                self.saveAs()
+                self.saveAs()  # 未命名的文件需要另存为
         else:
             with open(
-                self.filepaths[selected_tab], "wb+"
+                self.filepaths[selected_tab],
+                "wb+",
             ) as f:
                 f.write(
-                    self.Editors[
-                        selected_tab
-                    ]
+                    self.Editors[selected_tab]
                     .children["!frame2"]
                     .children["!scrolledtext"]
                     .get(1.0, ttk.END)
@@ -702,16 +782,20 @@ class Editor:
                 )
 
                 Messagebox.okcancel(
-                    title="PyEditor", message="保存成功"
+                    title="PyEditor",
+                    message="保存成功",
                 )
 
     def saveAs(self):
+        """另存为文件"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
         ]
 
-        filepath = filedialog.askopenfilename()
+        filepath = (
+            filedialog.askopenfilename()
+        )  # 获取另存为路径
 
         if filepath == "":
             return
@@ -735,6 +819,7 @@ class Editor:
         self.openFile(filepath)
 
     def copy(self):
+        """复制"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
@@ -742,11 +827,14 @@ class Editor:
 
         self.Editors[selected_tab].children[
             "!frame"
-        ].children["!scrolledtext"].event_generate(
+        ].children[
+            "!scrolledtext"
+        ].event_generate(  # 生成一个复制事件
             "<<Copy>>"
         )
 
     def paste(self):
+        """粘贴"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
@@ -754,11 +842,14 @@ class Editor:
 
         self.Editors[selected_tab].children[
             "!frame"
-        ].children["!scrolledtext"].event_generate(
+        ].children[
+            "!scrolledtext"
+        ].event_generate(  # 创建一个粘贴事件
             "<<Paste>>"
         )
 
     def cut(self):
+        """剪切"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
@@ -766,14 +857,18 @@ class Editor:
 
         self.Editors[selected_tab].children[
             "!frame"
-        ].children["!scrolledtext"].event_generate(
+        ].children[
+            "!scrolledtext"
+        ].event_generate(
             "<<Cut>>"
         )
 
     def exit(self):
+        """退出编辑器"""
         sys.exit()
 
     def runFile(self):
+        """运行文件"""
         self.stopRun()
 
         index = self.codeEditor.index("current")
@@ -781,13 +876,19 @@ class Editor:
             "text"
         ]
 
-        self.save()
+        self.save()  # 运行前先保存
 
-        cmd = ["python", "-u", self.filepaths[selected_tab]]
+        cmd = [
+            "python",
+            "-u",
+            self.filepaths[selected_tab],
+        ]  # 运行命令
 
         testProcess = CMDProcess(
             cmd,
-            lambda info: self.Editors[selected_tab]
+            lambda info: self.Editors[
+                selected_tab
+            ]
             .children["!frame3"]
             .children["!scrolledtext"]
             .insert(ttk.END, info),
@@ -795,6 +896,7 @@ class Editor:
         testProcess.start()
 
     def stopRun(self):
+        """停止运行"""
         index = self.codeEditor.index("current")
         selected_tab = self.codeEditor.tab(index)[
             "text"
@@ -802,7 +904,9 @@ class Editor:
 
         self.Editors[selected_tab].children[
             "!frame3"
-        ].children["!scrolledtext"].delete(1.0, ttk.END)
+        ].children["!scrolledtext"].delete(
+            1.0, ttk.END
+        )
 
 
 if __name__ == "__main__":
