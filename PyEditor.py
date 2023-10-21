@@ -12,6 +12,39 @@ import idlelib.colorizer as idc
 import idlelib.percolator as idp
 
 
+# Setting
+global style
+global WIDTH
+global HEIGHT
+global title
+global size
+global alpha
+
+global font 
+global fontsize
+
+global encode 
+
+style = "superhero"
+
+WIDTH = 1920
+HEIGHT = 1080
+
+title = "PyEditor"
+
+size = (
+    int(WIDTH / 1.25),
+    HEIGHT - 50,
+)
+
+alpha = 0.95
+
+font = ""
+fontsize = 14
+
+encode = "utf-8"
+
+
 class CMDProcess(threading.Thread):
     def __init__(self, args, callback):
         threading.Thread.__init__(self)
@@ -275,24 +308,22 @@ class TreeWindow(ttk.Frame):
 
 class Editor:
     def __init__(self):
-        self.style = "superhero"
+        self.style = style
 
-        self.WIDTH = 1920
-        self.HEIGHT = 1080
+        self.WIDTH = WIDTH
+        self.HEIGHT = HEIGHT
 
         self.title = "PyEditor"
 
-        self.themename = self.style
+        self.themename = style
 
-        self.size = (
-            int(self.WIDTH / 1.25),
-            self.HEIGHT - 50,
-        )
+        self.size = size
+
         self.minsize = (0, 0)
         self.maxsize = (1920, 1080)
 
         self.resizable = None
-        self.alpha = 0.95
+        self.alpha = alpha
 
         # root
         self.root = ttk.Window(
@@ -559,7 +590,7 @@ class Editor:
 
         Text.pack(side="top", fill="both")
 
-        Text.config(font=("黑体", 14))
+        Text.config(font=(font, fontsize))
 
         Text.insert(1.0, text)
 
@@ -697,7 +728,7 @@ class Editor:
             text = f.read()
 
             try:
-                text = text.decode("utf-8")
+                text = text.decode(encode)
             except UnicodeDecodeError:  # 解密失败
                 if not filename.split(".")[
                     -1
@@ -778,7 +809,7 @@ class Editor:
                     .children["!frame2"]
                     .children["!scrolledtext"]
                     .get(1.0, ttk.END)
-                    .encode("utf-8")
+                    .encode(encode)
                 )
 
                 Messagebox.okcancel(
@@ -808,7 +839,7 @@ class Editor:
                 .children["!frame"]
                 .children["!scrolledtext"]
                 .get(1.0, ttk.END)
-                .encode("utf-8")
+                .encode(encode)
             )
 
         Messagebox.okcancel(
