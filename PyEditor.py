@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import subprocess
 import threading
@@ -333,8 +333,10 @@ class Editor:
             minsize=self.minsize,
             maxsize=self.maxsize,
             resizable=self.resizable,
-            alpha=self.alpha,
+            alpha=self.alpha
         )
+
+        self.root.iconbitmap("favicon.ico")
 
         self.root.place_window_center()
 
