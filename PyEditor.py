@@ -25,7 +25,7 @@ global fontsize
 
 global encode 
 
-style = "superhero"
+style = "litera"
 
 WIDTH = 1920
 HEIGHT = 1080
@@ -552,7 +552,7 @@ class Editor:
         CodeEditor = ttk.Frame(root)
 
         buttonFrame = ttk.Frame(
-            CodeEditor, style="dark"
+            CodeEditor
         )
 
         buttonFrame.pack(anchor="ne", fill="x")
