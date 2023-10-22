@@ -1,4 +1,5 @@
 ﻿import os
+import re
 import sys
 import subprocess
 import threading
@@ -441,6 +442,176 @@ class TreeWindow(ttk.Frame):
         return pathList[-1]
 
 
+def configure_tags(
+    text_widget, tags
+):
+    for tag, color in tags.items():
+        text_widget.tag_delete(tag)
+        text_widget.tag_config(
+            tag, foreground=color
+        )
+
+
+def group(*choices):
+    return (
+        "("
+        + "|".join(choices)
+        + ")"
+    )
+
+
+def any(*choices):
+    return group(*choices) + "*"
+
+
+def maybe(*choices):
+    return group(*choices) + "?"
+
+
+def _compile(expr):
+    return re.compile(
+        expr, re.UNICODE
+    )
+
+
+def on_key_release(text_widget):
+    lines = text_widget.get(
+        1.0, ttk.END
+    ).splitlines()
+
+    # regular expressions for number, string and keywords
+    Hexnumber = (
+        r"0[xX](?:_?[0-9a-fA-F])+"
+    )
+    Binnumber = r"0[bB](?:_?[01])+"
+    Octnumber = (
+        r"0[oO](?:_?[0-7])+"
+    )
+    Decnumber = r"(?:0(?:_?0)*|[1-9](?:_?[0-9])*)"
+    Intnumber = group(
+        Hexnumber,
+        Binnumber,
+        Octnumber,
+        Decnumber,
+    )
+    Exponent = r"[eE][-+]?[0-9](?:_?[0-9])*"
+    Pointfloat = group(
+        r"[0-9](?:_?[0-9])*\.(?:[0-9](?:_?[0-9])*)?",
+        r"\.[0-9](?:_?[0-9])*",
+    ) + maybe(Exponent)
+    Expfloat = (
+        r"[0-9](?:_?[0-9])*"
+        + Exponent
+    )
+    Floatnumber = group(
+        Pointfloat, Expfloat
+    )
+    Imagnumber = group(
+        r"[0-9](?:_?[0-9])*[jJ]",
+        Floatnumber + r"[jJ]",
+    )
+    Number = group(
+        Imagnumber,
+        Floatnumber,
+        Intnumber,
+    )
+
+    String1 = (
+        r"\'([^\\\n]|(\\.))*?\'"
+    )
+    String2 = (
+        r"\"([^\\\n]|(\\.))*?\""
+    )
+    String = group(
+        String1, String2
+    )
+
+    Comment = r"#.*"
+
+    regex = re.compile(
+        r"(^\s*"
+        r"(?P<if>if|elif|else)"
+        + "|"  # if condition
+        r"(?P<for>for|while)"
+        + "|"  # for loop
+        r"(?P<import>import)" + "|"
+        r"(?P<keywords>def|class|lambda|try|except|pass)"  # keywords
+        rf"|(?P<number>{Number})"
+        rf"|(?P<string>{String})"
+        rf"|(?P<comment>{Comment})"
+        r"[\s\(]+)"
+    )
+    for idx, line in enumerate(
+        lines
+    ):
+        keywords_tag = (
+            f"keywords_{idx}"
+        )
+        for_tag = f"for_{idx}"
+        if_tag = f"if_{idx}"
+        import_tag = (
+            f"import_{idx}"
+        )
+        number_tag = (
+            f"number_{idx}"
+        )
+        string_tag = (
+            f"string_{idx}"
+        )
+        comment_tag = (
+            f"comment_{idx}"
+        )
+        tags = {
+            keywords_tag: "blue",
+            for_tag: "#FFA500",
+            if_tag: "#FFA500",
+            import_tag: "#FFA500",
+            number_tag: "purple",
+            string_tag: "green",
+            comment_tag: "green"
+            # add new tag here
+        }
+        configure_tags(
+            text_widget, tags
+        )
+
+        for (
+            match
+        ) in regex.finditer(line):
+            for tag in tags:
+                group_name = (
+                    tag.split("_")[
+                        0
+                    ]
+                )
+                try:
+                    if (
+                        -1
+                        != match.start(
+                            group_name
+                        )
+                    ):
+                        text_widget.tag_add(
+                            tag,
+                            "{0}.{1}".format(
+                                idx
+                                + 1,
+                                match.start(
+                                    group_name
+                                ),
+                            ),
+                            "{0}.{1}".format(
+                                idx
+                                + 1,
+                                match.end(
+                                    group_name
+                                ),
+                            ),
+                        )
+                except IndexError:
+                    pass
+
+
 class Editor:
     def __init__(self):
         self.style = style
@@ -761,14 +932,17 @@ class Editor:
             )["text"]
         )
 
+        a = self.Editors[
+            selected_tab
+        ]
+
+        pass
+
         index = (
             self.Editors[
                 selected_tab
             ]
-            .children["!frame2"]
-            .children[
-                "!scrolledtext"
-            ]
+            .children["!text"]
             .index(ttk.INSERT)
         )
 
@@ -928,20 +1102,39 @@ class Editor:
             Text.yview(*xx)
 
         def Wheel(event):
-            Text.yview_scroll(int(-1 * (event.delta / 120)), "units")
-            line_numbers.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            Text.yview_scroll(
+                int(
+                    -1
+                    * (
+                        event.delta
+                        / 120
+                    )
+                ),
+                "units",
+            )
+            line_numbers.yview_scroll(
+                int(
+                    -1
+                    * (
+                        event.delta
+                        / 120
+                    )
+                ),
+                "units",
+            )
 
         Text = ttk.Text(CodeEditor)
 
         line_numbers = ttk.Text(
             CodeEditor,
             width=4,
-            padx=3,
-            pady=3,
+            padx=4,
+            pady=4,
             takefocus=0,
             border=0,
             background="lightgrey",
             state=ttk.DISABLED,
+            font=(font, fontsize),
         )
 
         line_numbers.pack(
@@ -974,33 +1167,30 @@ class Editor:
         Text.insert(1.0, text)
 
         Text.bind(
-            "<<Modified>>",
+            "<Key>",
             update_line_numbers,
         )
 
-        Text.bind("<MouseWheel>", Wheel)
-        line_numbers.bind("<MouseWheel>", Wheel)
+        Text.bind(
+            "<MouseWheel>", Wheel
+        )
+        line_numbers.bind(
+            "<MouseWheel>", Wheel
+        )
 
         update_line_numbers()
 
         # 类型为python时才需要
         if type == "python":
-            idc.color_config(
-                Text
-            )  # 高亮显示
-
-            p = idp.Percolator(
-                Text
+            Text.bind(
+                "<Key>",
+                lambda event: on_key_release(
+                    Text
+                ),
             )
-            d = (
-                idc.ColorDelegator()
-            )
-            p.insertfilter(d)
 
-            runWindow = (
-                ttk.ScrolledText(
-                    CodeEditor
-                )
+            runWindow = ttk.Text(
+                CodeEditor
             )
 
             runWindow.pack(
@@ -1093,7 +1283,7 @@ class Editor:
         """获取帮助信息"""
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.13 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.14 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
@@ -1239,9 +1429,7 @@ class Editor:
         self.Editors[
             selected_tab
         ].children[  # 这个元素访问方式......
-            "!frame"  # 调试慢慢找到的......
-        ].children[
-            "!scrolledtext"
+            "!text"  # 调试慢慢找到的......
         ].edit_undo()
 
     def regain(self):
@@ -1260,9 +1448,7 @@ class Editor:
         self.Editors[
             selected_tab
         ].children[
-            "!frame"
-        ].children[
-            "!scrolledtext"
+            "!text"
         ].edit_redo()
 
     def save(self):
@@ -1296,10 +1482,7 @@ class Editor:
                         selected_tab
                     ]
                     .children[
-                        "!frame2"
-                    ]
-                    .children[
-                        "!scrolledtext"
+                        "!text"
                     ]
                     .get(
                         1.0,
@@ -1338,14 +1521,9 @@ class Editor:
         ) as f:
             f.write(
                 self.Editors[
-                    self.filepaths[
-                        selected_tab
-                    ]
+                    selected_tab
                 ]
-                .children["!frame"]
-                .children[
-                    "!scrolledtext"
-                ]
+                .children["!text"]
                 .get(1.0, ttk.END)
                 .encode(encode)
             )
@@ -1374,9 +1552,7 @@ class Editor:
         self.Editors[
             selected_tab
         ].children[
-            "!frame"
-        ].children[
-            "!scrolledtext"
+            "!text"
         ].event_generate(  # 生成一个复制事件
             "<<Copy>>"
         )
@@ -1397,9 +1573,7 @@ class Editor:
         self.Editors[
             selected_tab
         ].children[
-            "!frame"
-        ].children[
-            "!scrolledtext"
+            "!text"
         ].event_generate(  # 创建一个粘贴事件
             "<<Paste>>"
         )
@@ -1420,9 +1594,7 @@ class Editor:
         self.Editors[
             selected_tab
         ].children[
-            "!frame"
-        ].children[
-            "!scrolledtext"
+            "!text"
         ].event_generate(
             "<<Cut>>"
         )
@@ -1461,10 +1633,7 @@ class Editor:
             lambda info: self.Editors[
                 selected_tab
             ]
-            .children["!frame3"]
-            .children[
-                "!scrolledtext"
-            ]
+            .children["!text2"]
             .insert(ttk.END, info),
         )
         testProcess.start()
@@ -1485,9 +1654,7 @@ class Editor:
         self.Editors[
             selected_tab
         ].children[
-            "!frame3"
-        ].children[
-            "!scrolledtext"
+            "!text2"
         ].delete(
             1.0, ttk.END
         )
