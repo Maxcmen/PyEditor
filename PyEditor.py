@@ -927,6 +927,10 @@ class Editor:
             line_numbers.yview(*xx)
             Text.yview(*xx)
 
+        def Wheel(event):
+            Text.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            line_numbers.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
         Text = ttk.Text(CodeEditor)
 
         line_numbers = ttk.Text(
@@ -973,6 +977,9 @@ class Editor:
             "<<Modified>>",
             update_line_numbers,
         )
+
+        Text.bind("<MouseWheel>", Wheel)
+        line_numbers.bind("<MouseWheel>", Wheel)
 
         update_line_numbers()
 
@@ -1086,7 +1093,7 @@ class Editor:
         """获取帮助信息"""
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.12 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.13 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
