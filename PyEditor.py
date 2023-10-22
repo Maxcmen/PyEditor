@@ -887,11 +887,77 @@ class Editor:
                 side="right"
             )
 
-        Text = ttk.ScrolledText(
-            CodeEditor
+        # 更新行号显示
+
+        def update_line_numbers(
+            event=None,
+        ):
+            line_numbers.config(
+                state=ttk.NORMAL
+            )
+            line_numbers.delete(
+                "1.0", ttk.END
+            )
+
+            # 获取当前文本编辑器内容的行数
+            line_count = (
+                Text.get(
+                    "1.0", "end"
+                ).count("\n")
+                + 1
+            )
+
+            # 插入行号
+            for i in range(
+                1, line_count + 1
+            ):
+                line_numbers.insert(
+                    ttk.END,
+                    f"{i}\n",
+                )
+
+            line_numbers.config(
+                state=ttk.DISABLED
+            )
+            line_numbers.configure(
+                yscrollcommand=scrollbar.set
+            )
+
+        def scollerbarCommand(*xx):
+            line_numbers.yview(*xx)
+            Text.yview(*xx)
+
+        Text = ttk.Text(CodeEditor)
+
+        line_numbers = ttk.Text(
+            CodeEditor,
+            width=4,
+            padx=3,
+            pady=3,
+            takefocus=0,
+            border=0,
+            background="lightgrey",
+            state=ttk.DISABLED,
+        )
+
+        line_numbers.pack(
+            side="left", fill="y"
+        )
+
+        scrollbar = ttk.Scrollbar(
+            CodeEditor,
+            command=scollerbarCommand,
+        )
+        scrollbar.pack(
+            side=ttk.RIGHT,
+            fill="y",
         )
 
         Text.see(ttk.END)
+
+        Text.configure(
+            yscrollcommand=scrollbar.set
+        )
 
         Text.pack(
             side="top", fill="both"
@@ -902,6 +968,13 @@ class Editor:
         )
 
         Text.insert(1.0, text)
+
+        Text.bind(
+            "<<Modified>>",
+            update_line_numbers,
+        )
+
+        update_line_numbers()
 
         # 类型为python时才需要
         if type == "python":
@@ -1013,7 +1086,7 @@ class Editor:
         """获取帮助信息"""
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.11 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.12 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
