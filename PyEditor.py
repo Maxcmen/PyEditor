@@ -1,8 +1,11 @@
-﻿import os
+﻿import builtins
+import keyword
+import os
 import re
 import sys
 import subprocess
 import threading
+import tkinter
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -528,17 +531,23 @@ def on_key_release(text_widget):
 
     Comment = r"#.*"
 
+    Variable = (
+        r"[a-z][a-zA-Z0-9_]*"
+    )
+
     regex = re.compile(
         r"(^\s*"
         r"(?P<if>if|elif|else)"
         + "|"  # if condition
         r"(?P<for>for|while)"
         + "|"  # for loop
-        r"(?P<import>import)" + "|"
-        r"(?P<keywords>def|class|lambda|try|except|pass)"  # keywords
+        r"(?P<import>import|from|as)"
+        + "|"
+        r"(?P<keywords>def|class|lambda|try|except|pass|with|as)"  # keywords
         rf"|(?P<number>{Number})"
         rf"|(?P<string>{String})"
         rf"|(?P<comment>{Comment})"
+        rf"|(?P<variable>{Variable})"
         r"[\s\(]+)"
     )
     for idx, line in enumerate(
@@ -561,6 +570,10 @@ def on_key_release(text_widget):
         comment_tag = (
             f"comment_{idx}"
         )
+        variable_tag = (
+            f"variable_{idx}"
+        )
+
         tags = {
             keywords_tag: "blue",
             for_tag: "#FFA500",
@@ -568,7 +581,8 @@ def on_key_release(text_widget):
             import_tag: "#FFA500",
             number_tag: "purple",
             string_tag: "green",
-            comment_tag: "green"
+            comment_tag: "green",
+            variable_tag: "purple"
             # add new tag here
         }
         configure_tags(
@@ -608,8 +622,122 @@ def on_key_release(text_widget):
                                 ),
                             ),
                         )
-                except IndexError:
+                except:
                     pass
+
+
+class Autocomplete:
+    def __init__(
+        self, parent, text_widget
+    ):
+        self.text_widget = (
+            text_widget
+        )
+        self.text_widget.bind(
+            "<KeyRelease>",
+            self.on_keyrelease,
+        )
+
+        self.listbox = (
+            tkinter.Listbox(parent)
+        )
+        self.listbox.pack(
+            side="right", fill="y"
+        )
+
+        self.autocomplete_keywords = keyword.kwlist + dir(
+            builtins
+        )
+
+    def on_keyrelease(self, event):
+        if (
+            event.keysym
+            == "Return"
+        ):  # ignore return key
+            return
+        # get current line text
+        (
+            line_number,
+            column,
+        ) = self.text_widget.index(
+            "insert"
+        ).split(
+            "."
+        )
+        current_line = (
+            self.text_widget.get(
+                f"{line_number}.0",
+                "insert",
+            )
+        )
+        if (
+            current_line
+        ):  # if there is text on current line
+            token = (
+                current_line.split(
+                    " "
+                )[-1]
+            )
+            token = token.split(
+                "."
+            )[-1]
+            self.update_listbox(
+                token
+            )
+
+    def update_listbox(self, line):
+        self.listbox.delete(
+            0, "end"
+        )  # clear the listbox
+        for (
+            word
+        ) in (
+            self.autocomplete_keywords
+        ):
+            if word.startswith(
+                line
+            ):
+                self.listbox.insert(
+                    "end", word
+                )  # insert matching word into listbox
+        self.listbox.bind(
+            "<<ListboxSelect>>",
+            self.on_listbox_select,
+        )  # bind event
+
+    def on_listbox_select(
+        self, event
+    ):
+        try:
+            widget = event.widget
+            selection = (
+                widget.curselection()
+            )
+            selected_word = (
+                widget.get(
+                    selection[0]
+                )
+            )
+            # delete current line
+            (
+                line_number,
+                _,
+            ) = self.text_widget.index(
+                "insert"
+            ).split(
+                "."
+            )
+            self.text_widget.delete(
+                f"{line_number}.0",
+                "insert",
+            )
+            # insert selected word
+            self.text_widget.insert(
+                "insert",
+                selected_word,
+            )
+        except:
+            return
 
 
 class Editor:
@@ -790,6 +918,7 @@ class Editor:
         self.statusBar = ttk.Frame(
             self.root
         )
+
         self.statusBar.pack(
             side="bottom", fill="x"
         )
@@ -1156,6 +1285,10 @@ class Editor:
             yscrollcommand=scrollbar.set
         )
 
+        Autocomplete(
+            CodeEditor, Text
+        )
+
         Text.pack(
             side="top", fill="both"
         )
@@ -1165,6 +1298,8 @@ class Editor:
         )
 
         Text.insert(1.0, text)
+
+        on_key_release(Text)
 
         Text.bind(
             "<Key>",
@@ -1283,7 +1418,7 @@ class Editor:
         """获取帮助信息"""
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.14 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.15 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
