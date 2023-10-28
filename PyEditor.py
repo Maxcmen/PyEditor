@@ -39,7 +39,7 @@ global encode
 global pythonVersion
 global pythonPath
 
-style = "litera"
+style = "darkly"
 
 WIDTH = 1920
 HEIGHT = 1080
@@ -981,8 +981,6 @@ class Editor:
             title=self.title,
             themename=self.themename,
             size=self.size,
-            minsize=self.minsize,
-            maxsize=self.maxsize,
             resizable=self.resizable,
             alpha=self.alpha,
         )
@@ -993,9 +991,12 @@ class Editor:
 
         self.root.place_window_center()
 
+        self.Menubutton = ttk.Menubutton(self.root, text='≡')
+        self.Menubutton.pack(anchor='nw')
+
         # Menu
         self.menu = ttk.Menu(
-            self.root
+            self.Menubutton
         )
 
         # file menu
@@ -1103,6 +1104,40 @@ class Editor:
             command=self.stopRun,
         )
 
+        # view Menu
+        self.viewMenu = ttk.Menu(
+            self.menu
+        )
+
+        self.menu.add_cascade(
+            label="视图",
+            menu=self.viewMenu
+        )
+
+        self.themeMenu = ttk.Menu(
+            self.menu
+        )
+
+        self.themeMenu.add_command(
+            label="Darkly",
+            command=lambda: self.switchTheme(style="darkly")
+        )
+
+        self.themeMenu.add_command(
+            label="Superhero",
+            command=lambda: self.switchTheme(style="superhero")
+        )
+
+        self.themeMenu.add_command(
+            label="Litera",
+            command=lambda: self.switchTheme(style="litera")
+        )
+
+        self.viewMenu.add_cascade(
+            label="主题",
+            menu=self.themeMenu
+        )
+
         # help Menu
         self.helpMenu = ttk.Menu(
             self.menu
@@ -1124,6 +1159,8 @@ class Editor:
         self.fileTree = TreeWindow(
             self.root, self.path
         )
+
+        self.Menubutton.config(menu=self.menu)
 
         self.fileTree.tree.bind(
             "<<TreeviewSelect>>",
@@ -1260,11 +1297,14 @@ class Editor:
             10, self.updateStatus
         )
 
-        self.root.config(
-            menu=self.menu
-        )
+        self.root.config()
 
         self.root.mainloop()
+
+    def switchTheme(self, style):
+        self.root.style.theme_use(style)
+
+        self.root.update()
 
     def updateStatus(self):
         """
@@ -1563,7 +1603,7 @@ class Editor:
         # 类型为python时才需要
         if type == "python":
             Text.bind(
-                "<Key>",
+                "<KeyRelease>",
                 lambda event: on_key_release(
                     Text
                 ),
@@ -1718,7 +1758,7 @@ class Editor:
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.16 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.17 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
@@ -1786,8 +1826,10 @@ class Editor:
         for (
             path
         ) in self.Editors.keys():
-            if path == filepath:
-                return
+            try:
+                if self.filepaths[path] == filepath:
+                    return
+            except: pass
 
         if filepath == "":
             filepath = (
