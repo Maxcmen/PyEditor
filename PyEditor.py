@@ -1,4 +1,4 @@
-﻿import builtins
+import builtins
 import keyword
 import os
 import re
@@ -810,6 +810,8 @@ class Autocomplete:
             None
         
         """
+        self.parent = parent
+
         self.text_widget = (
             text_widget
         )
@@ -822,7 +824,7 @@ class Autocomplete:
             tkinter.Listbox(parent)
         )
         self.listbox.pack(
-            side="right", fill="y"
+            side="right", fill="y", anchor="nw"
         )
 
         self.autocomplete_keywords = keyword.kwlist + dir(
@@ -846,6 +848,15 @@ class Autocomplete:
         ):  # ignore return key
             return
         # get current line text
+        x, y = self.text_widget.winfo_pointerxy()
+        win_x, win_y = self.parent.winfo_rootx(), self.parent.winfo_rooty()
+
+        x, y = x - win_x, y - win_y
+        
+        self.listbox.place(x=x, 
+                           y=y)
+        self.listbox.update()
+
         (
             line_number,
             column,
@@ -1284,12 +1295,7 @@ class Editor:
         self.popOutMenu.add_command(
             label="剪切",
             command=self.cut,
-        )
-
-        self.root.bind(
-            "<Button-3>",
-            self.popout,
-        )
+        )   
 
         self.filepaths = {}
 
@@ -1302,6 +1308,16 @@ class Editor:
         self.root.mainloop()
 
     def switchTheme(self, style):
+        """
+        切换应用主题。
+        
+        Args:
+            style: str类型，可选，应用主题样式名称。
+        
+        Returns:
+            无返回值。
+        
+        """
         self.root.style.theme_use(style)
 
         self.root.update()
@@ -1564,14 +1580,15 @@ class Editor:
             fill="y",
         )
 
+        if type == "python":
+            Autocomplete(
+                CodeEditor, Text
+            )
+
         Text.see(ttk.END)
 
         Text.configure(
             yscrollcommand=scrollbar.set
-        )
-
-        Autocomplete(
-            CodeEditor, Text
         )
 
         Text.pack(
@@ -1583,8 +1600,6 @@ class Editor:
         )
 
         Text.insert(1.0, text)
-
-        on_key_release(Text)
 
         Text.bind(
             "<Key>",
@@ -1602,8 +1617,10 @@ class Editor:
 
         # 类型为python时才需要
         if type == "python":
+            on_key_release(Text)
+
             Text.bind(
-                "<KeyRelease>",
+                "<Key>",
                 lambda event: on_key_release(
                     Text
                 ),
@@ -1621,6 +1638,8 @@ class Editor:
             runWindow.config(
                 font=("黑体", 14)
             )
+
+        Text.bind("<Button-3>", self.popout)
 
         return CodeEditor
 
@@ -1758,7 +1777,7 @@ class Editor:
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.17 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.18 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
