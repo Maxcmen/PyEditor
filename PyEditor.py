@@ -1,13 +1,18 @@
 import builtins
+import ctypes
 import keyword
 import os
 import re
 import sys
 import subprocess
+import tempfile
 import threading
 import tkinter
+from multiprocessing import Process
+from tkinter.ttk import Style
 
 import ttkbootstrap as ttk
+import win32gui
 from ttkbootstrap.constants import *
 from tkinter import (
     PhotoImage,
@@ -21,6 +26,8 @@ from ttkbootstrap.dialogs import (
 )
 import idlelib.colorizer as idc
 import idlelib.percolator as idp
+
+import plugins
 
 
 # Setting
@@ -68,14 +75,14 @@ class CMDProcess(threading.Thread):
     ):
         """
         初始化函数，创建一个线程对象，继承自threading.Thread类。
-        
+
         Args:
             args: 命令行参数列表，类型为List[str]。
             callback: 回调函数，类型为Callable。
-        
+
         Returns:
             None
-        
+
         """
         threading.Thread.__init__(
             self
@@ -88,13 +95,13 @@ class CMDProcess(threading.Thread):
     def run(self):
         """
         运行给定的命令参数，并在有回调函数的情况下，将命令输出的每一行传递给回调函数处理。
-        
+
         Args:
             无参数。
-        
+
         Returns:
             无返回值。
-        
+
         """
         """运行命令"""
         self.proc = subprocess.Popen(
@@ -129,11 +136,11 @@ class TreeWindow(ttk.Frame):
     ):
         """
         初始化函数，创建文件资源管理器窗口的界面布局。
-        
+
         Args:
             master: 窗口的顶部部件。
             path: 文件路径。
-        
+
         Returns:
             None.
         """
@@ -239,13 +246,13 @@ class TreeWindow(ttk.Frame):
     def popOut(self, event):
         """
         Pop out the menu of directory or file.
-        
+
         Args:
             event: The event which triggers the pop out menu.
-        
+
         Returns:
             None.
-        
+
         """
         selected_item = (
             self.tree.selection()[
@@ -286,13 +293,13 @@ class TreeWindow(ttk.Frame):
     def delFile(self):
         """
         从文件系统中删除选定的文件。
-        
+
         Args:
             无参数。
-        
+
         Returns:
             无返回值。
-        
+
         """
         """删除文件"""
         if Messagebox.yesno(
@@ -320,10 +327,10 @@ class TreeWindow(ttk.Frame):
     def reName(self):
         """
         重命名文件
-        
+
         Args:
             无
-        
+
         Returns:
             无
         """
@@ -376,13 +383,13 @@ class TreeWindow(ttk.Frame):
     def createDir(self):
         """
         创建文件夹。
-        
+
         Args:
             无参数。
-        
+
         Returns:
             无返回值。
-        
+
         """
         selected_item = (
             self.tree.selection()[
@@ -418,16 +425,15 @@ class TreeWindow(ttk.Frame):
                 )
 
     def createFile(self):
-        
         """
         创建一个新文件
-        
+
         Args:
             无
-        
+
         Returns:
             无
-        
+
         Raises:
             无
         """
@@ -472,13 +478,13 @@ class TreeWindow(ttk.Frame):
     def OpenDir(self, path):
         """
         打开文件夹，更新目录树。
-        
+
         Args:
             path (str): 文件夹路径。
-        
+
         Returns:
             None.
-        
+
         """
         """打开文件夹"""
         self.rootPath = (
@@ -505,11 +511,11 @@ class TreeWindow(ttk.Frame):
     ):
         """
         加载指定路径下的所有文件，并以树形结构展示文件目录
-        
+
         Args:
             parent: 父节点路径
             path: 文件目录路径
-        
+
         Returns:
             None
         """
@@ -543,10 +549,10 @@ class TreeWindow(ttk.Frame):
     def getlastPath(self, path):
         """
         获取路径最后的文件名或文件夹名
-        
+
         Args:
             path (str): 文件或文件夹的路径
-        
+
         Returns:
             str: 文件名或文件夹名
         """
@@ -562,15 +568,15 @@ def configure_tags(
 ):
     """
     为给定的文本控件配置标签。
-    
+
     Args:
         text_widget (Text): 需要配置标签的文本控件。
         tags (Dict[str, str]): 包含标签名和对应颜色的字典。
-    
+
     Returns:
         None.
     """
-   
+
     for tag, color in tags.items():
         text_widget.tag_delete(tag)
         text_widget.tag_config(
@@ -581,10 +587,10 @@ def configure_tags(
 def group(*choices):
     """
     拼接给定字符串列表并返回一个正则表达式的匹配组。
-    
+
     Args:
         choices (str): 需要拼接的字符串列表。
-    
+
     Returns:
         str: 拼接后的字符串，并在前后加上括号，用于正则表达式分组。
     """
@@ -598,13 +604,13 @@ def group(*choices):
 def any(*choices):
     """
     返回一个匹配多个选择项的正则表达式。
-    
+
     Args:
         *choices (str): 多个选择项，可以是单个字符或字符串。
-    
+
     Returns:
         str: 包含多个选择项的正则表达式，以"*"结尾。
-    
+
     """
     return group(*choices) + "*"
 
@@ -612,13 +618,13 @@ def any(*choices):
 def maybe(*choices):
     """
     返回一个表示可能性的字符串，其中包含给定选项的组合以及一个问号。
-    
+
     Args:
         choices: 一个或多个字符串的元组，表示可能的选项。
-    
+
     Returns:
         一个字符串，其中包含所有选项的组合以及一个问号。
-    
+
     """
     return group(*choices) + "?"
 
@@ -626,13 +632,13 @@ def maybe(*choices):
 def _compile(expr):
     """
     根据表达式字符串编译正则表达式对象。
-    
+
     Args:
         expr (str): 表达式字符串。
-    
+
     Returns:
         re.Pattern: 编译后的正则表达式对象。
-    
+
     """
     return re.compile(
         expr, re.UNICODE
@@ -642,10 +648,10 @@ def _compile(expr):
 def on_key_release(text_widget):
     """
     对给定的文本widget进行关键字、字符串、注释、变量、数字等的语法高亮
-    
+
     Args:
         text_widget: 待高亮的文本widget
-    
+
     Returns:
         None
     """
@@ -805,10 +811,10 @@ class Autocomplete:
         Args:
             parent: 包含文本框的父窗口
             text_widget: 绑定键盘释放事件的文本框
-        
+
         Returns:
             None
-        
+
         """
         self.parent = parent
 
@@ -824,7 +830,9 @@ class Autocomplete:
             tkinter.Listbox(parent)
         )
         self.listbox.pack(
-            side="right", fill="y", anchor="nw"
+            side="right",
+            fill="y",
+            anchor="nw",
         )
 
         self.autocomplete_keywords = keyword.kwlist + dir(
@@ -834,13 +842,13 @@ class Autocomplete:
     def on_keyrelease(self, event):
         """
         当按键释放事件发生时，该函数会被调用。
-        
+
         Args:
             event: 按键释放事件对象。
-        
+
         Returns:
             None.
-        
+
         """
         if (
             event.keysym
@@ -848,13 +856,22 @@ class Autocomplete:
         ):  # ignore return key
             return
         # get current line text
-        x, y = self.text_widget.winfo_pointerxy()
-        win_x, win_y = self.parent.winfo_rootx(), self.parent.winfo_rooty()
+        (
+            x,
+            y,
+        ) = (
+            self.text_widget.winfo_pointerxy()
+        )
+        win_x, win_y = (
+            self.parent.winfo_rootx(),
+            self.parent.winfo_rooty(),
+        )
 
         x, y = x - win_x, y - win_y
-        
-        self.listbox.place(x=x, 
-                           y=y)
+
+        self.listbox.place(
+            x=x, y=y
+        )
         self.listbox.update()
 
         (
@@ -889,13 +906,13 @@ class Autocomplete:
     def update_listbox(self, line):
         """
         更新自动补全列表框，根据输入的行进行匹配并显示在列表框中。
-        
+
         Args:
             line (str): 用户输入的字符串。
-        
+
         Returns:
             None.
-        
+
         """
         self.listbox.delete(
             0, "end"
@@ -922,10 +939,10 @@ class Autocomplete:
         """
         Args:
             event: Tkinter 的 Listbox 事件对象
-        
+
         Returns:
             None
-        
+
         """
         try:
             widget = event.widget
@@ -959,14 +976,152 @@ class Autocomplete:
             return
 
 
+class Plugins:
+    def __init__(
+        self, parent, pads
+    ):
+        self.parent = parent
+        self.pads = pads
+
+        self.pluginsWindow = (
+            ttk.Toplevel(parent)
+        )
+
+        self.pluginsList = ttk.Treeview(
+            self.pluginsWindow,
+            columns=(
+                "name",
+                "version",
+                "introduce",
+            ),
+            show="headings",
+            displaycolumns="#all",
+        )
+
+        self.pluginsList.heading(
+            "name",
+            text="名字",
+            anchor="w",
+        )
+        self.pluginsList.heading(
+            "version",
+            text="版本",
+            anchor="w",
+        )
+        self.pluginsList.heading(
+            "introduce",
+            text="介绍",
+            anchor="w",
+        )
+
+        for (
+            plugin
+        ) in plugins.plugins:
+            self.pluginsList.insert(
+                "",
+                "end",
+                values=plugin[:3],
+            )
+
+        self.pluginsList.pack(
+            fill="both"
+        )
+
+        self.pluginsList.bind(
+            "<<TreeviewSelect>>",
+            self.on_select,
+        )
+
+        self.pluginsWindow.title(
+            "插件"
+        )
+
+        self.pluginsWindow.mainloop()
+
+    def on_select(self, event):
+        foc = (
+            self.pluginsList.focus()
+        )
+        val = self.pluginsList.set(
+            foc
+        )
+
+        for (
+            plugin
+        ) in plugins.plugins:
+            if (
+                plugin[0]
+                == val["name"]
+            ):
+                if (
+                    plugin[3]
+                    == False
+                ):
+                    p = Process(
+                        target=plugin[
+                            -1
+                        ]
+                    )
+                    p.start()
+
+                else:
+                    plugin = plugin[
+                        -1
+                    ](
+                        self.parent
+                    ).frame
+                self.pads.add(
+                    plugin,
+                    text=val[
+                        "name"
+                    ],
+                )
+
+
+def WinGUI_Rounded_right_angles(
+    window, V=0
+):  # 窗口边缘 1:直角 0:圆角
+    (
+        _,
+        empty_icon_path,
+    ) = tempfile.mkstemp()
+    window.iconbitmap(
+        empty_icon_path
+    )
+    DwmApi = ctypes.windll.dwmapi
+    DwmSetWindowAttribute = (
+        DwmApi.DwmSetWindowAttribute
+    )
+    _master = win32gui.GetParent(
+        window.winfo_id()
+    )
+    Value = ctypes.c_int(V)
+
+    def dwm_set_window_attribute(
+        type, attribute, size
+    ):
+        DwmSetWindowAttribute(
+            _master,
+            type,
+            attribute,
+            size,
+        )
+
+    dwm_set_window_attribute(
+        33,
+        ctypes.byref(Value),
+        ctypes.sizeof(Value),
+    )
+
+
 class Editor:
     def __init__(self):
         """
         初始化窗口，菜单栏，以及代码编辑器等组件
-        
+
         Args:
             无
-        
+
         Returns:
             无
         """
@@ -996,14 +1151,24 @@ class Editor:
             alpha=self.alpha,
         )
 
+        WinGUI_Rounded_right_angles(
+            self.root
+        )
+
         self.root.iconbitmap(
             "favicon.ico"
         )
 
         self.root.place_window_center()
 
-        self.Menubutton = ttk.Menubutton(self.root, text='≡')
-        self.Menubutton.pack(anchor='nw')
+        self.Menubutton = (
+            ttk.Menubutton(
+                self.root, text="≡"
+            )
+        )
+        self.Menubutton.pack(
+            anchor="nw"
+        )
 
         # Menu
         self.menu = ttk.Menu(
@@ -1122,7 +1287,7 @@ class Editor:
 
         self.menu.add_cascade(
             label="视图",
-            menu=self.viewMenu
+            menu=self.viewMenu,
         )
 
         self.themeMenu = ttk.Menu(
@@ -1131,22 +1296,33 @@ class Editor:
 
         self.themeMenu.add_command(
             label="Darkly",
-            command=lambda: self.switchTheme(style="darkly")
+            command=lambda: self.switchTheme(
+                style="darkly"
+            ),
         )
 
         self.themeMenu.add_command(
             label="Superhero",
-            command=lambda: self.switchTheme(style="superhero")
+            command=lambda: self.switchTheme(
+                style="superhero"
+            ),
         )
 
         self.themeMenu.add_command(
             label="Litera",
-            command=lambda: self.switchTheme(style="litera")
+            command=lambda: self.switchTheme(
+                style="litera"
+            ),
         )
 
         self.viewMenu.add_cascade(
             label="主题",
-            menu=self.themeMenu
+            menu=self.themeMenu,
+        )
+
+        self.menu.add_command(
+            label="插件",
+            command=self.PluginsMarket,
         )
 
         # help Menu
@@ -1171,7 +1347,9 @@ class Editor:
             self.root, self.path
         )
 
-        self.Menubutton.config(menu=self.menu)
+        self.Menubutton.config(
+            menu=self.menu
+        )
 
         self.fileTree.tree.bind(
             "<<TreeviewSelect>>",
@@ -1231,8 +1409,12 @@ class Editor:
         )
 
         self.codeEditor.pack(
-            fill=ttk.BOTH,
-            expand=True,
+            fill=ttk.BOTH
+        )
+
+        self.codeEditor.bind(
+            "<Button-3>",
+            self.padpopout,
         )
 
         # PopoutMenu
@@ -1295,7 +1477,21 @@ class Editor:
         self.popOutMenu.add_command(
             label="剪切",
             command=self.cut,
-        )   
+        )
+
+        self.padPopOutMenu = (
+            ttk.Menu(self.root)
+        )
+
+        self.padPopOutMenu.add_command(
+            label="新建页面",
+            command=self.newFile,
+        )
+
+        self.padPopOutMenu.add_command(
+            label="关闭页面",
+            command=self.exitFile,
+        )
 
         self.filepaths = {}
 
@@ -1307,31 +1503,46 @@ class Editor:
 
         self.root.mainloop()
 
+    def PluginsMarket(self):
+        """
+        打开插件市场。
+        Args:
+            无参数。
+        Returns:
+            无返回值。
+        """
+        Plugins(
+            self.root,
+            self.codeEditor,
+        )
+
     def switchTheme(self, style):
         """
         切换应用主题。
-        
+
         Args:
             style: str类型，可选，应用主题样式名称。
-        
+
         Returns:
             无返回值。
-        
+
         """
-        self.root.style.theme_use(style)
+        self.root.style.theme_use(
+            style
+        )
 
         self.root.update()
 
     def updateStatus(self):
         """
         更新状态栏显示的信息，包括光标所在位置和当前文件路径。
-        
+
         Args:
             无参数。
-        
+
         Returns:
             无返回值。
-        
+
         """
         index = (
             self.codeEditor.index(
@@ -1344,11 +1555,12 @@ class Editor:
             )["text"]
         )
 
-        a = self.Editors[
-            selected_tab
-        ]
-
-        pass
+        try:
+            a = self.Editors[
+                selected_tab
+            ]
+        except KeyError:
+            return
 
         index = (
             self.Editors[
@@ -1395,10 +1607,10 @@ class Editor:
     def fileTreeClick(self, event):
         """
         当资源管理器中的文件树节点被选择且为文件时打开
-        
+
         Args:
             event: 事件对象，此处未使用
-        
+
         Returns:
             None
         """
@@ -1437,12 +1649,12 @@ class Editor:
     ):
         """
         创建一个文件编辑界面
-        
+
         Args:
             root: 界面所在的Tkinter窗口
             text: 编辑器默认文本内容
             type: 编辑器类型，目前只支持"python"
-        
+
         Returns:
             Tkinter中的Frame对象，包含编辑器界面
         """
@@ -1553,7 +1765,9 @@ class Editor:
                 "units",
             )
 
-        Text = ttk.Text(CodeEditor)
+        Text = ttk.Text(
+            CodeEditor, tabs=56
+        )
 
         line_numbers = ttk.Text(
             CodeEditor,
@@ -1639,7 +1853,10 @@ class Editor:
                 font=("黑体", 14)
             )
 
-        Text.bind("<Button-3>", self.popout)
+        Text.bind(
+            "<Button-3>",
+            self.popout,
+        )
 
         return CodeEditor
 
@@ -1648,11 +1865,11 @@ class Editor:
     ):
         """
         创建一个图片查看器
-        
+
         Args:
             root: 图片查看器的顶层窗口
             path: 图片文件的路径
-        
+
         Returns:
             image: Label控件，显示图片
         """
@@ -1682,13 +1899,13 @@ class Editor:
     def saveAll(self):
         """
         保存所有文件。
-        
+
         Args:
             无参数。
-        
+
         Returns:
             无返回值。
-        
+
         """
         """保存所有文件"""
         for (
@@ -1701,13 +1918,13 @@ class Editor:
     def exitFile(self):
         """
         关闭当前选中的文件标签页
-        
+
         Args:
             无
-        
+
         Returns:
             无
-        
+
         """
         index = (
             self.codeEditor.index(
@@ -1724,13 +1941,29 @@ class Editor:
             index
         )
 
+    def padpopout(self, event):
+        """
+        显示右键菜单
+
+        Args:
+            event: 触发鼠标事件的对象
+
+        Returns:
+            None
+        """
+        self.padPopOutMenu.post(
+            event.x_root,
+            event.y_root,
+        )
+        self.root.update()
+
     def popout(self, event):
         """
         显示右键菜单
-        
+
         Args:
             event: 触发鼠标事件的对象
-        
+
         Returns:
             None
         """
@@ -1743,13 +1976,13 @@ class Editor:
     def openDir(self):
         """
         打开文件夹
-        
+
         Args:
             无
-        
+
         Returns:
             无
-        
+
         """
         dirPath = (
             filedialog.askdirectory()
@@ -1767,29 +2000,29 @@ class Editor:
     def about(self):
         """
         获取关于PyEditor的帮助信息
-        
+
         Args:
             无参数
-        
+
         Returns:
             无返回值，仅弹出一个对话框显示PyEditor的版本号和开发者信息
-        
+
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.18 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.19 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
         """
         创建新文件并将其添加到编辑器中。
-        
+
         Args:
             无参数。
-        
+
         Returns:
             无返回值，仅在 self.Editors 中添加新编辑器。
-        
+
         """
         max = 0
 
@@ -1834,10 +2067,10 @@ class Editor:
     ):
         """
         打开文件
-        
+
         Args:
             filepath (str, optional): 文件路径. Defaults to "".
-        
+
         Returns:
             None
         """
@@ -1846,9 +2079,15 @@ class Editor:
             path
         ) in self.Editors.keys():
             try:
-                if self.filepaths[path] == filepath:
+                if (
+                    self.filepaths[
+                        path
+                    ]
+                    == filepath
+                ):
                     return
-            except: pass
+            except:
+                pass
 
         if filepath == "":
             filepath = (
@@ -1930,13 +2169,13 @@ class Editor:
     def backout(self):
         """
         撤销文本框编辑。
-        
+
         Args:
             无。
-        
+
         Returns:
             无返回值。
-        
+
         """
         """撤销文本框编辑"""
         index = (
@@ -1959,10 +2198,10 @@ class Editor:
     def regain(self):
         """
         恢复编辑框编辑
-        
+
         Args:
             无参数
-        
+
         Returns:
             无返回值
         """
@@ -1987,10 +2226,10 @@ class Editor:
     def save(self):
         """
         保存文件
-        
+
         Args:
             无
-        
+
         Returns:
             无
         """
@@ -2041,13 +2280,13 @@ class Editor:
     def saveAs(self):
         """
         另存为文件
-        
+
         Args:
             无
-        
+
         Returns:
             无
-        
+
         Raises:
             无
         """
@@ -2092,10 +2331,10 @@ class Editor:
 
     def copy(self):
         """复制当前选中的文本内容
-        
+
         Args:
             无
-        
+
         Returns:
             无
         """
@@ -2122,13 +2361,13 @@ class Editor:
     def paste(self):
         """
         在选定的编辑器中执行粘贴操作。
-        
+
         Args:
             无。
-        
+
         Returns:
             无返回值。
-        
+
         """
         """粘贴"""
         index = (
@@ -2153,13 +2392,13 @@ class Editor:
     def cut(self):
         """
         剪切当前选中的文本。
-        
+
         Args:
             无参数。
-        
+
         Returns:
             无返回值。
-        
+
         """
         """剪切"""
         index = (
@@ -2184,13 +2423,13 @@ class Editor:
     def exit(self):
         """
         退出编辑器
-        
+
         Args:
             无
-        
+
         Returns:
             无
-        
+
         """
         """退出编辑器"""
         sys.exit()
@@ -2198,10 +2437,10 @@ class Editor:
     def runFile(self):
         """
         运行文件
-        
+
         Args:
             无
-        
+
         Returns:
             无
         """
@@ -2242,10 +2481,10 @@ class Editor:
     def stopRun(self):
         """
         停止运行
-        
+
         Args:
             无
-        
+
         Returns:
             无
         """
