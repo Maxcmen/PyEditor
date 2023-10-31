@@ -21,6 +21,17 @@ class calendarFrame:
         # point    提供一个基点，来确定窗口位置
         # position 窗口在点的位置 'ur'-右上, 'ul'-左上, 'll'-左下, 'lr'-右下
         # s.master = tk.Tk()
+        """
+        初始化函数，创建一个选定的日期选择的弹出窗口。
+
+        Args:
+            s: 类型为DateSelector的实例
+            point: 提供基点的元组，来确定窗口位置，默认值为None
+            position: 窗口在点的位置，取值为'ur'-右上, 'ul'-左上, 'll'-左下, 'lr'-右下，默认值为None
+
+        Returns:
+            无返回值，直接创建一个DateSelector的实例并显示弹出窗口。
+        """
         s.master = tk.Toplevel()
         s.master.withdraw()
         fwday = calendar.SUNDAY
@@ -126,6 +137,18 @@ class calendarFrame:
         s, locale, fwday
     ):
         # 实例化适当的日历类
+        """
+        根据locale和fwday返回适当的日历类实例。
+
+        Args:
+            s: 整数，表示周中的第一天。取值范围为0到6，其中0代表星期一。
+            locale: str，表示使用的语言环境。例如："en"表示英文，"zh"表示中文。
+            fwday: str，表示一周中的第一天。取值范围为'Monday'到'Sunday'。
+
+        Returns:
+            calendar.TextCalendar或calendar.LocaleTextCalendar的实例，根据locale和fwday的值返回。
+
+        """
         if locale is None:
             return calendar.TextCalendar(
                 fwday
@@ -138,6 +161,20 @@ class calendarFrame:
     def __setitem__(
         s, item, value
     ):
+        """
+        给s的属性item赋值为value。
+
+        Args:
+            s: 必须是G_Frame实例
+            item: 属性名称必须是"year", "month", "selectbackground", "selectforeground"中的一个
+            value: 赋予属性item的值，不允许为None。
+
+        Returns:
+            None.
+
+        Raises:
+            AttributeError: 当item为"year"或"month"时，抛出异常"attribute '%s' is not writeable"。
+        """
         if item in (
             "year",
             "month",
@@ -167,6 +204,18 @@ class calendarFrame:
             )
 
     def __getitem__(s, item):
+        """
+        Get the value of a given item in the widget's option database, or get the
+        value of the widget if item is not specified.
+
+        Args:
+            s (widget): Widget to retrieve the option from.
+            item (str, optional): Item to retrieve, or None to retrieve the widget's value. Defaults to None.
+
+        Returns:
+            Any: The value of the item, or the value of the widget if item is None.
+
+        """
         if item in (
             "year",
             "month",
@@ -203,6 +252,16 @@ class calendarFrame:
 
     def __setup_styles(s):
         # 自定义TTK风格
+        """
+        设置TTK按钮的自定义样式。
+
+        Args:
+            s (tk.Tk): Tkinter窗口实例。
+
+        Returns:
+            None。
+
+        """
         style = ttk.Style(s.master)
         arrow_layout = lambda dir: (
             [
@@ -231,6 +290,14 @@ class calendarFrame:
 
     def __place_widgets(s):
         # 标头框架及其小部件
+        """
+        Args:
+            无
+
+        Returns:
+            无
+
+        """
         Input_judgment_num = (
             s.master.register(
                 s.Input_judgment
@@ -443,6 +510,16 @@ class calendarFrame:
 
     def __config_calendar(s):
         # cols = s._cal.formatweekheader(3).split()
+        """
+        Configure calendar's header.
+
+        Args:
+            s (Calendar): Calendar widget.
+
+        Returns:
+            None.
+
+        """
         cols = [
             "日",
             "一",
@@ -482,7 +559,29 @@ class calendarFrame:
     def __setup_selection(
         s, sel_bg, sel_fg
     ):
+        """
+        设置选择框的属性。
+
+        Args:
+            s: DatePicker 对象。
+            sel_bg: 选择框背景颜色。
+            sel_fg: 选择框字体颜色。
+
+        Returns:
+            None.
+        """
+
         def __canvas_forget(evt):
+            """
+            该函数用于清空画布上的所有内容，并释放画布上的空间，以便重新绘制其他内容。
+
+            Args:
+                evt: 触发事件的实例对象，可忽略。
+
+            Returns:
+                无返回值。
+
+            """
             canvas.place_forget()
             s._selection = None
 
@@ -518,6 +617,16 @@ class calendarFrame:
         )
 
     def _build_calendar(s):
+        """
+        生成日历，并更新对应日期信息。
+
+        Args:
+            s: Calendar 类的实例对象。
+
+        Returns:
+            None.
+
+        """
         year, month = (
             s._date.year,
             s._date.month,
@@ -557,6 +666,17 @@ class calendarFrame:
     def _show_select(
         s, text, bbox
     ):
+        """
+        为新的选择配置画布。
+
+        Args:
+            s: Calendar 类的实例。
+            text: 选中日期的文本。
+            bbox: 文字绘制的位置和大小，元组类型，包含四个元素，分别为 x, y, width, height。
+
+        Returns:
+            None.
+        """
         """为新的选择配置画布。"""
         x, y, width, height = bbox
 
@@ -590,6 +710,18 @@ class calendarFrame:
         column=None,
         widget=None,
     ):
+        """
+        Args:
+            s: calendar 中的对象。
+            evt: 鼠标事件对象。
+            item: 被点击的日历行对应的日期。
+            column: 被点击的列对应的日期。
+            widget: 被点击的日历部件。
+
+        Returns:
+            None.
+
+        """
         """在日历的某个地方点击。"""
         if not item:
             x, y, widget = (
@@ -649,6 +781,15 @@ class calendarFrame:
         s._show_select(text, bbox)
 
     def _prev_month(s):
+        """
+        更新日历以显示前一个月。
+
+        Args:
+            无
+
+        Returns:
+            无
+        """
         """更新日历以显示前一个月。"""
         s._canvas.place_forget()
         s._selection = None
@@ -669,6 +810,16 @@ class calendarFrame:
         s._update()
 
     def _next_month(s):
+        """
+        更新日历以显示下一个月。
+
+        Args:
+            s: 一个具有属性和方法的对象，该对象需要更新以显示下一个月的日历。
+
+        Returns:
+            None
+
+        """
         """更新日历以显示下一个月。"""
         s._canvas.place_forget()
         s._selection = None
@@ -699,6 +850,18 @@ class calendarFrame:
     def _update(
         s, event=None, key=None
     ):
+        """
+        刷新界面
+
+        Args:
+            s: 类型为object，表示一个窗口对象
+            event: 类型为object，表示一个事件对象，默认为None
+            key: 类型为object，表示一个键盘按键对象，默认为None
+
+        Returns:
+            无返回值
+
+        """
         """刷新界面"""
         if (
             key

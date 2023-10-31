@@ -4,7 +4,27 @@ from ttkbootstrap import *
 
 class calculator:
     def __init__(self, parent):
+        """
+        Args:
+            parent: 创建计算器的父窗口
+
+        Returns:
+            None
+
+        功能：计算器的主窗口
+        """
+
         def add_word(c):
+            """
+            在文本框中插入字符。
+
+            Args:
+                c: 插入的字符。
+
+            Returns:
+                None。
+
+            """
             if c == "=":
                 txt.replace(
                     "0.0",
@@ -22,6 +42,18 @@ class calculator:
                 )  # 添加按钮输入内容
 
         def handler(fun, c):
+            """
+            该函数是一个Python闭包，它接受一个函数fun和一个参数c，返回一个新的函数。
+            新的函数将以参数c作为fun的参数之一，并在执行时将fun的参数固定为c。
+
+            Args:
+                fun: 一个可调用对象，将作为新函数的被调用方。
+                c: 一个Python对象，作为fun的参数之一。
+
+            Returns:
+                一个可调用对象，它是新函数。
+
+            """
             return lambda fun=fun, c=c: fun(
                 c
             )

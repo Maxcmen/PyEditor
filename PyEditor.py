@@ -937,13 +937,16 @@ class Autocomplete:
         self, event
     ):
         """
+        当选择框（ListBox）发生选择事件时，将选中的单词插入到文本框（Text）中并删除当前行文本。
+
         Args:
-            event: Tkinter 的 Listbox 事件对象
+            event: Tkinter 的 Listbox 事件对象，用于获取选择框（ListBox）的相关信息。
 
         Returns:
             None
 
         """
+
         try:
             widget = event.widget
             selection = (
@@ -980,6 +983,17 @@ class Plugins:
     def __init__(
         self, parent, pads
     ):
+        """
+        初始化插件窗口
+
+        Args:
+            parent: 父窗口
+            pads: 插件列表
+
+        Returns:
+            None
+
+        """
         self.parent = parent
         self.pads = pads
 
@@ -1039,6 +1053,16 @@ class Plugins:
         self.pluginsWindow.mainloop()
 
     def on_select(self, event):
+        """
+        Args:
+            event: 事件对象，本函数不使用
+
+        Returns:
+            None
+
+        功能：在插件列表被选中时运行，根据选中的插件名称查找对应插件，启动插件进程或添加插件界面到pads列表。
+
+        """
         foc = (
             self.pluginsList.focus()
         )
@@ -1064,6 +1088,8 @@ class Plugins:
                     )
                     p.start()
 
+                    return
+
                 else:
                     plugin = plugin[
                         -1
@@ -1081,6 +1107,16 @@ class Plugins:
 def WinGUI_Rounded_right_angles(
     window, V=0
 ):  # 窗口边缘 1:直角 0:圆角
+    """
+    设置窗口的边缘是直角还是圆角。
+
+    Args:
+        window: 窗口句柄。
+        V: 0 表示圆角，1 表示直角。
+
+    Returns:
+        None
+    """
     (
         _,
         empty_icon_path,
@@ -1100,6 +1136,18 @@ def WinGUI_Rounded_right_angles(
     def dwm_set_window_attribute(
         type, attribute, size
     ):
+        """
+        设置动态窗口属性。
+
+        Args:
+            type (int): 窗口类型。
+            attribute (int): 窗口属性。
+            size (int): 窗口属性大小。
+
+        Returns:
+            None: 无返回值。
+
+        """
         DwmSetWindowAttribute(
             _master,
             type,
@@ -1708,6 +1756,16 @@ class Editor:
         def update_line_numbers(
             event=None,
         ):
+            """
+            更新文本编辑器的行号。
+
+            Args:
+                event: 触发该函数的事件对象，可选。
+
+            Returns:
+                无返回值。
+
+            """
             line_numbers.config(
                 state=ttk.NORMAL
             )
@@ -1740,10 +1798,28 @@ class Editor:
             )
 
         def scollerbarCommand(*xx):
+            """
+            该函数实现滚动条命令的功能，接收参数xx，并将其传递给line_numbers和Text的yview方法
+
+            Args:
+                xx: 接收任意个参数，表示滚动条的滚动位置
+
+            Returns:
+                None
+            """
             line_numbers.yview(*xx)
             Text.yview(*xx)
 
         def Wheel(event):
+            """
+            滚动事件处理函数，用于处理鼠标滚轮事件。
+
+            Args:
+                event: 鼠标滚轮事件对象。
+
+            Returns:
+                None。
+            """
             Text.yview_scroll(
                 int(
                     -1
@@ -2010,7 +2086,7 @@ class Editor:
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.19 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.20 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
