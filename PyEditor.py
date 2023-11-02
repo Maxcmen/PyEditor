@@ -58,7 +58,7 @@ size = (
     HEIGHT - 100,
 )
 
-alpha = 0.95
+alpha = 1.0
 
 font = ""
 fontsize = 14
@@ -1357,6 +1357,20 @@ class Editor:
         )
 
         self.themeMenu.add_command(
+            label="Cyborg",
+            command=lambda: self.switchTheme(
+                style="cyborg"
+            ),
+        )
+
+        self.themeMenu.add_command(
+            label="Cosmo",
+            command=lambda: self.switchTheme(
+                style="cosmo"
+            ),
+        )
+
+        self.themeMenu.add_command(
             label="Litera",
             command=lambda: self.switchTheme(
                 style="litera"
@@ -2086,7 +2100,7 @@ class Editor:
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.20 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.21 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
