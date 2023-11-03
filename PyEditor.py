@@ -151,7 +151,7 @@ class TreeWindow(ttk.Frame):
         )
 
         self.frame.pack(
-            side="left", fill="y"
+            side="left", fill="y", padx=10, pady=10
         )
 
         self.label = ttk.Label(
@@ -829,11 +829,6 @@ class Autocomplete:
         self.listbox = (
             tkinter.Listbox(parent)
         )
-        self.listbox.pack(
-            side="right",
-            fill="y",
-            anchor="nw",
-        )
 
         self.autocomplete_keywords = keyword.kwlist + dir(
             builtins
@@ -1471,7 +1466,7 @@ class Editor:
         )
 
         self.codeEditor.pack(
-            fill=ttk.BOTH
+            fill=ttk.BOTH, padx=10, pady=10
         )
 
         self.codeEditor.bind(
@@ -2100,7 +2095,7 @@ class Editor:
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.21 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.22 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
