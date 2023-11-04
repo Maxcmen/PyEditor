@@ -91,7 +91,6 @@ class RegexTest:
                     message=e,
                 )
 
-
         self.match_button = (
             ttk.Button(
                 self.frame,

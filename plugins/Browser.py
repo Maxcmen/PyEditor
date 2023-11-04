@@ -2,8 +2,7 @@ import sys
 
 try:
     from cefpython3 import cefpython as cef
-expect: (
-    sys.exit())
+except: pass
 
 import tkinter as tk
 import platform

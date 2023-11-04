@@ -67,36 +67,55 @@ encode = "utf-8"
 pythonVersion = f"{sys.version_info[0]}.{sys.version_info[1]}"
 pythonPath = sys.executable
 
+settings = {
+    "style": "darkly",
+    "WIDTH": 1920,
+    "HEIGHT": 1080,
+    "title": "PyEditor",
+    "alpha": 1.0,
+    "font": "",
+    "fontsize": 14,
+    "encode": "utf-8",
+}
+
 
 def loadConfig():
-    settings = \
-        [
-            "style",
-            "WIDTH",
-            "HEIGHT",
-            "title",
-            "alpha",
-            "font",
-            "fontsize",
-            "encode",
-        ]
+    settings = [
+        "style",
+        "WIDTH",
+        "HEIGHT",
+        "title",
+        "alpha",
+        "font",
+        "fontsize",
+        "encode",
+    ]
 
     with open(
-            "config",
-            "r",
-            "utf-8"
-        ) as f:
-        config = eval(
-            f.read()
-        )
+        "config.txt",
+        "r",
+        encoding="utf-8",
+    ) as f:
+        config = eval(f.read())
 
         for setting in config:
             if setting in settings:
                 globals()[
                     setting
-                ] = config[
-                    setting
-                ]
+                ] = config[setting]
+
+        globals[
+            "settings"
+        ] = config
+
+
+def saveConfig(config):
+    with open(
+        "config.txt",
+        "w",
+        encoding="utf-8",
+    ) as f:
+        f.write(str(config))
 
 
 try:

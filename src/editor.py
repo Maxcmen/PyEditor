@@ -26,6 +26,7 @@ from ttkbootstrap.dialogs import (
 import idlelib.colorizer as idc
 import idlelib.percolator as idp
 
+from . import settingpad
 from .Autocomplete import *
 from .cmdprocess import *
 from .highlighting import *
@@ -254,6 +255,11 @@ class Editor:
             command=self.PluginsMarket,
         )
 
+        self.menu.add_command(
+            label="设置",
+            command=self.SettingPad
+        )
+
         # help Menu
         self.helpMenu = ttk.Menu(
             self.menu
@@ -287,8 +293,10 @@ class Editor:
 
         self.status = f"0:0  CRLF  {encode}  Python {pythonVersion}"
 
-        self.statusBar = ttk.Frame(
-            self.root
+        self.statusBar = (
+            ttk.Labelframe(
+                self.root
+            )
         )
 
         self.statusBar.pack(
@@ -433,6 +441,15 @@ class Editor:
         self.root.config()
 
         self.root.mainloop()
+
+
+    def SettingPad(self):
+        self.codeEditor.add(
+            settingpad.SettingPad(
+                self.codeEditor
+            ).frame,
+            text="设置"
+        )
 
     def PluginsMarket(self):
         """
@@ -970,7 +987,7 @@ class Editor:
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.23 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.24 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
