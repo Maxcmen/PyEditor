@@ -37,7 +37,6 @@ Pyeditor目前的运行方式是通过本地安装依赖来运行。
 因此我们需要先拉取代码，然后安装依赖。
 
 拉取PyEditor代码:
-
     git clone https://github.com/Maxcmen/PyEditor.git
 
 PyEditor需要安装以下依赖：

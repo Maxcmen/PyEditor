@@ -8,6 +8,15 @@ from ttkbootstrap.dialogs import (
 
 class RegexTest:
     def __init__(self, master):
+        """
+        初始化函数
+
+        Args:
+            master: 创建界面的窗口对象
+
+        Returns:
+            None
+        """
         self.frame = ttk.Frame(
             master
         )
@@ -40,10 +49,22 @@ class RegexTest:
         )
 
         def match_text():
+            """
+            匹配文本框中符合正则表达式规则的内容，并将结果输出到匹配框中。
+
+            Args:
+                无参数。
+
+            Returns:
+                无返回值。
+
+            """
             try:
+                # 编译正则表达式
                 Regex = re.compile(
                     self.regex_text.get()
                 )
+                # 在文本框中查找所有匹配的内容
                 match_text = re.findall(
                     Regex,
                     self.text_box.get(
@@ -52,20 +73,24 @@ class RegexTest:
                     ),
                 )
 
+                # 清空匹配框
                 self.match_box.delete(
                     "1.0", "end"
                 )
 
+                # 将匹配结果插入到匹配框中
                 self.match_box.insert(
                     "end",
                     match_text,
                 )
 
             except Exception as e:
+                # 发生异常时，显示错误信息对话框
                 Messagebox(
                     title="错误",
                     message=e,
                 )
+
 
         self.match_button = (
             ttk.Button(

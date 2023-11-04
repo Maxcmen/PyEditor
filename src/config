@@ -1,0 +1,10 @@
+{
+    "style": "darkly",
+    "WIDTH": 1920,
+    "HEIGHT": 1080,
+    "title": "PyEditor",
+    "alpha": 1.0,
+    "font": "",
+    "fontsize": 14,
+    "encode": "utf-8"
+}
