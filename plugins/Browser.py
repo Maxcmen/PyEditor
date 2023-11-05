@@ -1,8 +1,11 @@
 import sys
 
 try:
-    from cefpython3 import cefpython as cef
-except: pass
+    from cefpython3 import (
+        cefpython as cef,
+    )
+except:
+    pass
 
 import tkinter as tk
 import platform

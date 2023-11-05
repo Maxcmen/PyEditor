@@ -30,6 +30,7 @@ from . import settingpad
 from .Autocomplete import *
 from .cmdprocess import *
 from .highlighting import *
+from .plugins import Plugins
 from .treewindow import *
 from .setting import *
 
@@ -257,7 +258,7 @@ class Editor:
 
         self.menu.add_command(
             label="设置",
-            command=self.SettingPad
+            command=self.SettingPad,
         )
 
         # help Menu
@@ -442,13 +443,12 @@ class Editor:
 
         self.root.mainloop()
 
-
     def SettingPad(self):
         self.codeEditor.add(
             settingpad.SettingPad(
                 self.codeEditor
             ).frame,
-            text="设置"
+            text="设置",
         )
 
     def PluginsMarket(self):
@@ -987,7 +987,7 @@ class Editor:
         """
         Messagebox.okcancel(
             title="PyEditor",
-            message="版本: 0.24 \n开发者: 郑翊 & 王若同",
+            message="版本: 0.25 \n开发者: 郑翊 & 王若同",
         )
 
     def newFile(self):
